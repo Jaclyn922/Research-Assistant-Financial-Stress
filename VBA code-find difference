@@ -1,0 +1,70 @@
+Sub CompareData()
+    Dim ws1 As Worksheet, ws2 As Worksheet
+    Dim i As Long, j As Long
+    Dim lastRow1 As Long, lastRow2 As Long
+    Dim date1 As Range, date2 As Range
+    Dim value1 As Variant, value2 As Variant
+    Dim tolerance As Double
+    Dim diff As Double
+    Dim newWb As Workbook
+    Dim newWs As Worksheet
+    Dim newRow As Long
+
+    ' Create a new workbook
+    Set newWb = Workbooks.Add
+    Set newWs = newWb.Sheets(1)
+    newWs.Name = "Discrepancies"
+    
+    ' Set the headers for the new sheet
+    newWs.Cells(1, 1).Value = "Date"
+    newWs.Cells(1, 2).Value = "DFO Value"
+    newWs.Cells(1, 3).Value = "Bloomberg Value"
+    newWs.Cells(1, 4).Value = "Difference"
+    newRow = 2
+
+    ' Set worksheets
+    Set ws1 = Workbooks("DFORequestTable_FSI_05082018_v6_premia_weights_BIS.xlsm").Worksheets("D_Funding")
+    Set ws2 = Workbooks("bloomberg DSFO data.xlsx").Worksheets(1) ' Adjust the sheet index or name if needed
+
+    ' Find the last row with data in both sheets
+    lastRow1 = ws1.Cells(ws1.Rows.Count, "A").End(xlUp).Row
+    lastRow2 = ws2.Cells(ws2.Rows.Count, "A").End(xlUp).Row
+
+    ' Set the tolerance for the difference
+    tolerance = 5
+
+    ' Loop through the first sheet
+    For i = 14 To lastRow1
+        Set date1 = ws1.Cells(i, 1)
+        value1 = ws1.Cells(i, 2).Value
+        
+        ' Find the corresponding date in the second sheet
+        For j = 15 To lastRow2
+            Set date2 = ws2.Cells(j, 1)
+            value2 = ws2.Cells(j, 2).Value
+            
+            If date1.Value = date2.Value Then
+                ' Check if the value is not N/A
+                If IsNumeric(value1) And IsNumeric(value2) Then
+                    ' Calculate the difference
+                    diff = Abs(value1 - value2)
+                    If diff > tolerance Then
+                        ' Highlight the discrepancies
+                        ws1.Cells(i, 2).Interior.Color = RGB(255, 0, 0)
+                        ws2.Cells(j, 2).Interior.Color = RGB(255, 0, 0)
+                        
+                        ' Add the discrepancies to the new workbook
+                        newWs.Cells(newRow, 1).Value = date1.Value
+                        newWs.Cells(newRow, 2).Value = value1
+                        newWs.Cells(newRow, 3).Value = value2
+                        newWs.Cells(newRow, 4).Value = diff
+                        newRow = newRow + 1
+                    End If
+                End If
+                Exit For
+            End If
+        Next j
+    Next i
+    
+    MsgBox "Comparison complete. Discrepancies added to new workbook."
+End Sub
